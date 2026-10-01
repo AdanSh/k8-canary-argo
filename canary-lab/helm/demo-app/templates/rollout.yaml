@@ -34,6 +34,12 @@ spec:
       canaryService: {{ include "demo-app.canaryService" . }}
       scaleDownDelaySeconds: {{ .Values.canary.scaleDownDelaySeconds }}
       dynamicStableScale: {{ .Values.canary.dynamicStableScale }}
+      {{- if .Values.analysis.enabled }}
+      analysis:
+        templates:
+          - templateName: {{ include "demo-app.analysisTemplate" . }}
+        startingStep: {{ .Values.analysis.startingStep }}
+      {{- end }}
       trafficRouting:
         nginx:
           stableIngress: {{ include "demo-app.ingress" . }}

@@ -1,0 +1,29 @@
+{{- if .Values.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "demo-app.analysisTemplate" . }}
+  labels:
+    {{- include "demo-app.labels" . | nindent 4 }}
+spec:
+  metrics:
+    - name: canary-smoke-test
+      interval: {{ .Values.analysis.interval }}
+      failureLimit: {{ .Values.analysis.failureLimit }}
+      provider:
+        job:
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: curl
+                    image: {{ .Values.analysis.image }}
+                    # -f: exit non-zero on HTTP >= 400, which fails the measurement
+                    args:
+                      - -fsS
+                      - --max-time
+                      - "5"
+                      - http://{{ include "demo-app.canaryService" . }}{{ .Values.analysis.path }}
+{{- end }}

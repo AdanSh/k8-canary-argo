@@ -32,3 +32,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- define "demo-app.ingress" -}}
 {{ include "demo-app.fullname" . }}-ingress
 {{- end }}
+
+{{- define "demo-app.analysisTemplate" -}}
+{{ include "demo-app.fullname" . }}-smoke-test
+{{- end }}

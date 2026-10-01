@@ -36,17 +36,29 @@ canary:
     canary-by-header: X-Canary
     canary-by-header-value: "true"
     canary-by-cookie: canary
+  # Timed pauses: the rollout promotes itself unless analysis fails.
+  # Use pause: {} for a manual gate (kubectl argo rollouts promote <release>).
   steps:
     - setWeight: 20
-    - pause: {}              # manual: kubectl argo rollouts promote <release>
+    - pause: {duration: 1m}
     - setWeight: 50
-    - pause: {duration: 30s}
+    - pause: {duration: 1m}
     - setWeight: 100
   # Seconds the old ReplicaSet stays up after promotion
   scaleDownDelaySeconds: 30
   # true: scale stable down as canary scales up (fewer pods, slower abort)
   dynamicStableScale: false
 
-# Abort automatically if the canary can't become ready in time
-progressDeadlineSeconds: 600
-progressDeadlineAbort: false
+# Background smoke test: from startingStep until the rollout finishes, a Job
+# curls the canary Service every interval. failureLimit failures abort the rollout.
+analysis:
+  enabled: true
+  startingStep: 1          # index into steps: start once the canary has traffic
+  image: curlimages/curl:8.11.1
+  path: /color             # set to a missing path (e.g. /broken) to see an auto-abort
+  interval: 10s
+  failureLimit: 1
+
+# Abort automatically if the canary can't become ready in time (e.g. a bad image tag)
+progressDeadlineSeconds: 120
+progressDeadlineAbort: true
