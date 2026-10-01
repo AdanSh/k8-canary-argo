@@ -1,0 +1,12 @@
+{{ include "demo-app.fullname" . }} deployed with image {{ .Values.image.repository }}:{{ .Values.image.tag }}
+
+Watch the rollout:
+  kubectl argo rollouts get rollout {{ include "demo-app.fullname" . }} -n {{ .Release.Namespace }} --watch
+
+Test:
+  curl -s {{ .Values.ingress.host }}/color
+  curl -s -H "X-Canary: true" {{ .Values.ingress.host }}/color
+
+Promote / abort a paused canary:
+  kubectl argo rollouts promote {{ include "demo-app.fullname" . }} -n {{ .Release.Namespace }}
+  kubectl argo rollouts abort {{ include "demo-app.fullname" . }} -n {{ .Release.Namespace }}

@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "demo-app.fullname" . }}
+  labels:
+    {{- include "demo-app.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  progressDeadlineSeconds: {{ .Values.progressDeadlineSeconds }}
+  progressDeadlineAbort: {{ .Values.progressDeadlineAbort }}
+  selector:
+    matchLabels:
+      {{- include "demo-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "demo-app.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+  strategy:
+    canary:
+      stableService: {{ include "demo-app.stableService" . }}
+      canaryService: {{ include "demo-app.canaryService" . }}
+      scaleDownDelaySeconds: {{ .Values.canary.scaleDownDelaySeconds }}
+      dynamicStableScale: {{ .Values.canary.dynamicStableScale }}
+      trafficRouting:
+        nginx:
+          stableIngress: {{ include "demo-app.ingress" . }}
+          {{- with .Values.canary.additionalIngressAnnotations }}
+          additionalIngressAnnotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      steps:
+        {{- toYaml .Values.canary.steps | nindent 8 }}

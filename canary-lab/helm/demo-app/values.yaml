@@ -1,0 +1,52 @@
+replicaCount: 5
+revisionHistoryLimit: 3
+
+image:
+  repository: argoproj/rollouts-demo
+  # Changing the tag is a new version: it starts the canary steps below
+  tag: green
+  pullPolicy: IfNotPresent
+
+containerPort: 8080
+
+readinessProbe:
+  httpGet:
+    path: /color
+    port: http
+  initialDelaySeconds: 2
+  periodSeconds: 5
+
+resources:
+  requests:
+    cpu: 5m
+    memory: 32Mi
+
+service:
+  port: 80
+
+ingress:
+  className: nginx
+  host: demo.local
+  path: /
+  pathType: Prefix
+
+canary:
+  # Argo prefixes these with nginx.ingress.kubernetes.io/ on the canary Ingress it creates
+  additionalIngressAnnotations:
+    canary-by-header: X-Canary
+    canary-by-header-value: "true"
+    canary-by-cookie: canary
+  steps:
+    - setWeight: 20
+    - pause: {}              # manual: kubectl argo rollouts promote <release>
+    - setWeight: 50
+    - pause: {duration: 30s}
+    - setWeight: 100
+  # Seconds the old ReplicaSet stays up after promotion
+  scaleDownDelaySeconds: 30
+  # true: scale stable down as canary scales up (fewer pods, slower abort)
+  dynamicStableScale: false
+
+# Abort automatically if the canary can't become ready in time
+progressDeadlineSeconds: 600
+progressDeadlineAbort: false

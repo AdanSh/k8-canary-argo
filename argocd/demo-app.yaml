@@ -1,0 +1,28 @@
+# Argo CD Application: syncs the demo-app Helm chart from Git into canary-demo.
+# Bootstrap once with: kubectl apply -f argocd/demo-app.yaml
+# After that, every change is a Git commit (e.g. image.tag in values.yaml).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-app
+  namespace: argocd
+  finalizers:
+    # Deleting the Application also deletes the resources it created
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/AdanSh/k8-canary-argo.git
+    targetRevision: main
+    path: canary-lab/helm/demo-app
+    helm:
+      releaseName: demo-app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: canary-demo
+  syncPolicy:
+    automated:
+      prune: true      # delete resources removed from Git
+      selfHeal: true   # revert manual changes made with kubectl
+    syncOptions:
+      - CreateNamespace=true
