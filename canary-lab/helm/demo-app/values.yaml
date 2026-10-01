@@ -4,7 +4,7 @@ revisionHistoryLimit: 3
 image:
   repository: argoproj/rollouts-demo
   # Changing the tag is a new version: it starts the canary steps below
-  tag: green
+  tag: blue
   pullPolicy: IfNotPresent
 
 containerPort: 8080
